@@ -1,0 +1,40 @@
+name: KhelMitra APK Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract KhelMitra ZIP
+        run: |
+          unzip -q "khelmitra (4).zip" -d project
+          find project -maxdepth 5 -type f -name "gradlew" -print
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Find Android project
+        run: |
+          ANDROID_DIR=$(find project -type f -name "settings.gradle" -o -name "settings.gradle.kts" | head -n 1 | xargs dirname)
+          echo "ANDROID_DIR=$ANDROID_DIR" >> "$GITHUB_ENV"
+
+      - name: Build APK
+        working-directory: ${{ env.ANDROID_DIR }}
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: KhelMitra-debug-apk
+          path: ${{ env.ANDROID_DIR }}/app/build/outputs/apk/debug/app-debug.apk
